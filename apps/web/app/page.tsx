@@ -25,8 +25,12 @@ export default function Home() {
   function handleCreate() {
     const data = { collateral, debt };
     const encrypted = encrypt(data);
+
     setPosition(encrypted);
     setLiquidated(false);
+
+    setHealth(0);
+    setStatus("SAFE");
   }
 
   // 🤖 AUTO LIQUIDATION LOOP
@@ -35,18 +39,18 @@ export default function Home() {
 
     const interval = setInterval(() => {
       const h = computeHealth(position);
-      setHealth(h);
+      const s = getStatus(h);
 
-      const s = h >= 1.5 ? "SAFE" : h >= 1.0 ? "RISKY" : "LIQUIDATABLE";
+      setHealth(h);
       setStatus(s);
 
-      if (h < 1 && !liquidated) {
+      if (h < 1) {
         setLiquidated(true);
       }
     }, 2000);
 
     return () => clearInterval(interval);
-  }, [position, liquidated]);
+  }, [position]);
 
   // 🎨 health bar %
   const healthPercent = Math.min(health * 50, 100);
@@ -54,9 +58,11 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-b from-black to-gray-900 text-white p-10 flex justify-center">
       <div className="w-full max-w-xl bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl">
-        <h1 className="text-3xl font-bold mb-2">ShadowFi</h1>
-        <p className="text-gray-400 mb-4 text-sm">
-          Private Cross-Chain Lending Protocol
+        <h1 className="text-3xl font-bold mb-2">
+          ShadowFi — Private Lending Engine
+        </h1>
+        <p className="text-gray-500 text-xs mb-4">
+          Encrypted positions. Hidden liquidations. Institutional-grade DeFi.
         </p>
 
         <p className="text-gray-500 text-xs mb-6">

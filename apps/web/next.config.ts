@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  turbopack: {}, // penting untuk Next 16
+  turbopack: {}, // WAJIB untuk Next 16 di Vercel
 };
 
 export default nextConfig;

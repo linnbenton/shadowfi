@@ -53,4 +53,25 @@ You can verify these implementations in the `apps/web/lib` directory.
    cd shadowfi
    npm install
    ```
-   ![ShadowFi Dashboard](./apps/web/public/screenshot-final.png)
+
+## 📸 Step-by-Step Technical Demo
+
+### 1. Secure Multi-Chain Onboarding (Ika MPC)
+
+Users connect their Solana wallet, triggering **Ika's 2PC-MPC** to generate a unique cross-chain dWallet (`ika_mpc_...`).
+![Connect Wallet](./demo/connect.gif)
+
+### 2. Position Encryption via REFHE
+
+When depositing $1000 as collateral and borrowing $400, the data is instantly converted into FHE Ciphertext. Notice the `fhet_0x...` string in the Encrypt Shield panel.
+![Create Position](./demo/create.gif)
+
+### 3. Confidential Health Monitoring
+
+Even while encrypted, ShadowFi monitors the Health Factor. At high debt levels ($850 debt), the system flags the position as **RISKY** via homomorphic computation.
+![Risky Position](./demo/risky.gif)
+
+### 4. Automated Hidden Liquidation
+
+If the health factor drops below 1.0, the **Shadow Engine** executes a liquidation without ever exposing the user's private data to public mempools.
+![Liquidation](./demo/liquidate.gif)

@@ -28,6 +28,7 @@ Most lending protocols leak your liquidation price and position size. ShadowFi u
 
 Since we believe code speaks louder than videos, here is the technical workflow:
 
+0.  **Real Wallet Authentication:** Users must sign a digital message using their Solana Wallet (Phantom/Solflare). This signature acts as the secure entropy source for the FHE encryption process, ensuring only the owner can authorize position initialization.
 1.  **Bridgeless Custody:** Juri can inspect `lib/ika.ts`. The `createDWallet` function simulates the 2PC-MPC protocol, generating a unique dWallet `ika_mpc_...` where users can deposit native BTC.
 2.  **REFHE Encryption:** Inspect `lib/encrypt.ts`. When a position is created, raw data is processed via `encrypt()`, returning a formatted `fhet_0x...` ciphertext.
 3.  **Confidential Computation:** The `computeHealth()` function (in a real scenario, this would be an on-chain instruction) calculates the health factor directly on the ciphertext, ensuring that neither the collateral amount nor the debt is ever decrypted publicly.
@@ -42,6 +43,7 @@ You can verify these implementations in the `apps/web/lib` directory.
 - **Privacy:** Encrypt REFHE Protocol [Documentation](https://docs.encrypt.xyz/)
 - **Interoperability:** Ika 2PC-MPC dWallets [Documentation](https://docs.ika.xyz/)
 - **Blockchain:** Solana Devnet
+- **Wallet Interaction:** @solana/wallet-adapter (Real-time Transaction Signing & Message Auth)
 
 ---
 

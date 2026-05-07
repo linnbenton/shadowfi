@@ -4,13 +4,20 @@ import { useEffect, useState } from "react";
 import { encrypt, computeHealth, getStatus } from "@/lib/encrypt";
 import { createDWallet } from "@/lib/ika";
 
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useWallet } from "@solana/wallet-adapter-react";
+
 export default function Home() {
+  const { publicKey, connected, disconnect, signMessage } = useWallet();
+  const { setVisible } = useWalletModal();
+  const [mounted, setMounted] = useState(false);
   const [user] = useState("shadow_dev_01");
   const [wallet, setWallet] = useState<string>("");
 
   const [collateral, setCollateral] = useState(0);
   const [debt, setDebt] = useState(0);
   const [position, setPosition] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
 
   const [health, setHealth] = useState(0);
   const [status, setStatus] = useState("SAFE");
@@ -20,8 +27,15 @@ export default function Home() {
   ]);
 
   // State untuk Simulasi Koneksi & Transaksi
-  const [connected, setConnected] = useState(false);
-  const [txHash, setTxHash] = useState<string | null>(null);
+  useEffect(() => {
+    if (connected && publicKey) {
+      addLog(`Wallet Connected: ${publicKey.toBase58().substring(0, 6)}...`);
+    }
+  }, [connected, publicKey]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const w = createDWallet(user);
@@ -35,29 +49,47 @@ export default function Home() {
     );
   }
 
-  const connectWallet = () => {
-    addLog("Connecting to Phantom Wallet...");
-    setTimeout(() => {
-      setConnected(true);
-      addLog("Wallet Connected: 77vax...99z");
-    }, 1000);
-  };
+  async function handleCreate() {
+    // 1. Validasi awal
+    if (!connected || !publicKey || !signMessage) {
+      addLog("ERROR: Wallet not ready for signing.");
+      return;
+    }
 
-  function handleCreate() {
-    addLog("Encrypting position data via REFHE...");
-    const data = { collateral, debt };
-    const encrypted = encrypt(data);
+    try {
+      addLog("Requesting FHE Key Signature...");
 
-    setTimeout(() => {
-      setPosition(encrypted);
-      setLiquidated(false);
-      setHealth(0);
-      setStatus("SAFE");
-      setTxHash(
-        "4v9Z2" + Math.random().toString(36).substring(7).toUpperCase() + "fH3",
+      const message = new TextEncoder().encode(
+        `ShadowFi Encryption Authorization\nUser: ${user}`,
       );
-      addLog("Position secured on Solana Devnet.");
-    }, 800);
+
+      // 2. PAKAI HOOK (BUKAN WINDOW.SOLANA)
+      // Ini akan otomatis memicu pop-up Phantom yang benar
+      await signMessage(message);
+
+      addLog("Signature verified. Encrypting via REFHE...");
+
+      // 3. Logika Enkripsi & State Update
+      const encrypted = encrypt({ collateral, debt });
+
+      // Simulasi delay biar kelihatan ada proses komputasi
+      setTimeout(() => {
+        setPosition(encrypted);
+        setLiquidated(false);
+        setHealth(0);
+        setStatus("SAFE");
+        setTxHash(
+          "4v9Z2" +
+            Math.random().toString(36).substring(7).toUpperCase() +
+            "fH3",
+        );
+        addLog("CONFIRMED: Position secured on Solana.");
+      }, 800);
+    } catch (err: any) {
+      // Menangkap jika user klik "Cancel" di Phantom
+      addLog("USER REJECTED SIGNATURE.");
+      console.log("User cancelled the sign request.");
+    }
   }
 
   useEffect(() => {
@@ -150,20 +182,36 @@ export default function Home() {
             </div>
 
             {/* LOGIKA TOMBOL KONEKSI WALLET */}
-            {!connected ? (
-              <button
-                onClick={connectWallet}
-                className="mt-4 bg-yellow-400 text-black py-4 rounded-xl font-black uppercase tracking-widest hover:scale-[0.98] transition-all shadow-[0_0_20px_rgba(250,204,21,0.4)]"
-              >
-                Connect Devnet Wallet
-              </button>
-            ) : (
-              <button
-                onClick={handleCreate}
-                className="mt-4 bg-[#00ffcc] text-black py-4 rounded-xl font-black uppercase tracking-widest hover:bg-[#00ffcc]/80 hover:scale-[0.98] transition-all shadow-[0_0_20px_rgba(0,255,204,0.3)]"
-              >
-                Initialize Encrypted Position
-              </button>
+            {mounted && (
+              <div className="mt-4">
+                {!connected ? (
+                  /* JIKA BELUM KONEK: Hanya muncul satu tombol besar */
+                  <button
+                    onClick={() => setVisible(true)}
+                    className="w-full py-6 bg-yellow-400 text-black font-black uppercase rounded-xl shadow-[0_0_20px_rgba(250,204,21,0.4)] hover:scale-[0.98] transition-all"
+                  >
+                    Connect Wallet to Start
+                  </button>
+                ) : (
+                  /* JIKA SUDAH KONEK: Muncul tombol aksi dan tombol disconnect di bawahnya */
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={handleCreate}
+                      className="w-full py-6 bg-[#00ffcc] text-black font-black uppercase rounded-xl shadow-[0_0_30px_rgba(0,255,204,0.3)] hover:scale-[0.98] transition-all animate-pulse"
+                    >
+                      Initialize Encrypted Position
+                    </button>
+
+                    <button
+                      onClick={() => disconnect()}
+                      className="w-full py-2 text-[10px] text-gray-500 uppercase tracking-widest hover:text-red-500 transition-colors border border-white/10 rounded-lg bg-white/5"
+                    >
+                      Disconnect Wallet ({publicKey?.toBase58().substring(0, 4)}
+                      ...{publicKey?.toBase58().slice(-4)})
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
 

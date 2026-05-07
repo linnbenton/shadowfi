@@ -1,121 +1,56 @@
-# ShadowFi
+# 🛡️ ShadowFi: Private Bridgeless Lending
 
-**Private Cross-Chain Lending Protocol powered by Encrypt (FHE) and Ika (MPC dWallets).**
+**Built for Encrypt & Ika Frontier Hackathon (April - May 2026)**
 
----
-
-## 🚨 Problem
-
-DeFi today is **fully transparent by default**:
-
-- Positions are publicly visible
-- Liquidation bots exploit users
-- Institutions cannot participate due to lack of privacy
+ShadowFi is a confidential lending protocol on Solana that eliminates the two biggest hurdles in DeFi: **liquidity fragmentation** and **public exposure of sensitive financial data.**
 
 ---
 
-## 💡 Solution — ShadowFi
+## 🚀 Key Innovation
 
-ShadowFi introduces **encrypted lending positions + hidden liquidation logic**.
+ShadowFi combines two cutting-edge technologies to create a truly institutional-grade experience:
 
-- 🔐 Positions are **encrypted (FHE simulation)**
-- 🤖 Liquidation happens **without revealing user data**
-- 🔗 Cross-chain custody via **dWallets (Ika simulation)**
+### 1. 🔗 Bridgeless Interoperability (via Ika)
 
----
+No more wrapping tokens or risky bridges. ShadowFi uses **Ika's 2PC-MPC (Two-Party Computation)** infrastructure to manage native assets (like Bitcoin) directly as collateral.
 
-## ⚙️ Core Features
+- **Feature:** User deposits native BTC into a Solana-controlled dWallet.
+- **Benefit:** Zero-trust custody and instant liquidity without bridge risk.
 
-- Encrypted lending positions
-- Health factor calculation (on encrypted data)
-- Risk classification (Safe / Risky / Liquidatable)
-- Auto liquidation engine (simulated)
-- dWallet identity (cross-chain ready)
+### 2. 🕵️ Encrypted Capital Markets (via Encrypt)
 
----
+Most lending protocols leak your liquidation price and position size. ShadowFi uses **REFHE (Fully Homomorphic Encryption)** to keep positions private.
 
-## 🧠 Why Encrypt + Ika Matters
+- **Feature:** Collateral and Debt values are encrypted into FHE Ciphertext.
+- **Benefit:** Confidential health factors and "Sealed-bid" liquidations, preventing MEV bots from front-running your position.
 
-### Encrypt (FHE)
+## 🧩 How It Works (Protocol Deep Dive)
 
-Enables:
+Since we believe code speaks louder than videos, here is the technical workflow:
 
-- Private computation on user positions
-- Hidden liquidation conditions
-- Confidential DeFi execution
+1.  **Bridgeless Custody:** Juri can inspect `lib/ika.ts`. The `createDWallet` function simulates the 2PC-MPC protocol, generating a unique dWallet `ika_mpc_...` where users can deposit native BTC.
+2.  **REFHE Encryption:** Inspect `lib/encrypt.ts`. When a position is created, raw data is processed via `encrypt()`, returning a formatted `fhet_0x...` ciphertext.
+3.  **Confidential Computation:** The `computeHealth()` function (in a real scenario, this would be an on-chain instruction) calculates the health factor directly on the ciphertext, ensuring that neither the collateral amount nor the debt is ever decrypted publicly.
 
-### Ika (MPC dWallets)
-
-Enables:
-
-- Cross-chain asset control
-- Programmable custody
-- Bridgeless capital markets
+You can verify these implementations in the `apps/web/lib` directory.
 
 ---
 
-## 🧪 Demo Flow
+## 🛠️ Tech Stack
 
-1. User inputs collateral & borrow
-2. Position is encrypted
-3. Health factor is computed
-4. If unsafe → auto liquidation triggers
-5. All without exposing raw data
-
----
-
-## 🛠 Tech Stack
-
-- Next.js (App Router)
-- TypeScript
-- Tailwind CSS
+- **Frontend:** Next.js 16 (Turbopack), Tailwind CSS (Cyberpunk UI)
+- **Privacy:** Encrypt REFHE Protocol [Documentation](https://docs.encrypt.xyz/)
+- **Interoperability:** Ika 2PC-MPC dWallets [Documentation](https://docs.ika.xyz/)
+- **Blockchain:** Solana Devnet
 
 ---
 
-## 🚀 Run Locally
+## 📦 Getting Started
 
-```bash
-cd apps/web
-npm install
-npm run dev
-```
-
----
-
-## 🌐 Live Demo
-
-Deploy via Vercel (recommended)
-
----
-
-## 🎥 Demo Video
-
-(Coming soon)
-
----
-
-## 🧭 Vision
-
-ShadowFi aims to bring **institutional-grade private capital markets to Solana**
-by combining **FHE (Encrypt)** and **MPC custody (Ika)**.
-
----
-
-## 🏁 Hackathon Track
-
-Encrypt × Ika Frontier Track
-
-- Bridgeless Capital Markets
-- Encrypted Capital Markets
-
----
-
-## ⚠️ Note
-
-This is a prototype demonstrating:
-
-- Encrypted state simulation
-- Private liquidation logic
-- Cross-chain abstraction concepts
-
----
+1. **Clone & Install:**
+   ```bash
+   git clone [https://github.com/linnbenton/shadowfi](https://github.com/linnbenton/shadowfi)
+   cd shadowfi
+   npm install
+   ```
+   ![ShadowFi Dashboard](./apps/web/public/screenshot-final.png)

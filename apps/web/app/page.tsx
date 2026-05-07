@@ -5,7 +5,7 @@ import { encrypt, computeHealth, getStatus } from "@/lib/encrypt";
 import { createDWallet } from "@/lib/ika";
 
 export default function Home() {
-  const [user] = useState("user1");
+  const [user] = useState("shadow_dev_01");
   const [wallet, setWallet] = useState<string>("");
 
   const [collateral, setCollateral] = useState(0);
@@ -15,139 +15,247 @@ export default function Home() {
   const [health, setHealth] = useState(0);
   const [status, setStatus] = useState("SAFE");
   const [liquidated, setLiquidated] = useState(false);
+  const [logs, setLogs] = useState<string[]>([
+    "Initializing Shadow Protocol...",
+  ]);
 
-  // create dWallet (Ika feel)
+  // State untuk Simulasi Koneksi & Transaksi
+  const [connected, setConnected] = useState(false);
+  const [txHash, setTxHash] = useState<string | null>(null);
+
   useEffect(() => {
     const w = createDWallet(user);
     setWallet(w);
+    addLog(`MPC dWallet created for ${user}`);
   }, [user]);
 
+  function addLog(msg: string) {
+    setLogs((prev) =>
+      [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 5),
+    );
+  }
+
+  const connectWallet = () => {
+    addLog("Connecting to Phantom Wallet...");
+    setTimeout(() => {
+      setConnected(true);
+      addLog("Wallet Connected: 77vax...99z");
+    }, 1000);
+  };
+
   function handleCreate() {
+    addLog("Encrypting position data via REFHE...");
     const data = { collateral, debt };
     const encrypted = encrypt(data);
 
-    setPosition(encrypted);
-    setLiquidated(false);
-
-    setHealth(0);
-    setStatus("SAFE");
+    setTimeout(() => {
+      setPosition(encrypted);
+      setLiquidated(false);
+      setHealth(0);
+      setStatus("SAFE");
+      setTxHash(
+        "4v9Z2" + Math.random().toString(36).substring(7).toUpperCase() + "fH3",
+      );
+      addLog("Position secured on Solana Devnet.");
+    }, 800);
   }
 
-  // 🤖 AUTO LIQUIDATION LOOP
   useEffect(() => {
     if (!position) return;
-
     const interval = setInterval(() => {
       const h = computeHealth(position);
       const s = getStatus(h);
-
       setHealth(h);
       setStatus(s);
-
-      if (h < 1) {
+      if (h < 1 && !liquidated) {
         setLiquidated(true);
+        addLog("CRITICAL: Confidential liquidation triggered.");
       }
     }, 2000);
-
     return () => clearInterval(interval);
-  }, [position]);
+  }, [position, liquidated]);
 
-  // 🎨 health bar %
   const healthPercent = Math.min(health * 50, 100);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-black to-gray-900 text-white p-10 flex justify-center">
-      <div className="w-full max-w-xl bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl">
-        <h1 className="text-3xl font-bold mb-2">
-          ShadowFi — Private Lending Engine
-        </h1>
-        <p className="text-gray-500 text-xs mb-4">
-          Encrypted positions. Hidden liquidations. Institutional-grade DeFi.
-        </p>
-
-        <p className="text-gray-500 text-xs mb-6">
-          dWallet: <span className="text-white">{wallet}</span>
-        </p>
-
-        {/* INPUT */}
-        <div className="flex flex-col gap-3">
-          <input
-            type="number"
-            placeholder="Collateral"
-            className="p-3 rounded-lg bg-black/50 border border-white/10"
-            onChange={(e) => setCollateral(Number(e.target.value))}
-          />
-
-          <input
-            type="number"
-            placeholder="Borrow Amount"
-            className="p-3 rounded-lg bg-black/50 border border-white/10"
-            onChange={(e) => setDebt(Number(e.target.value))}
-          />
-
-          <button
-            onClick={handleCreate}
-            className="bg-white text-black p-3 rounded-lg font-semibold hover:opacity-80 transition"
-          >
-            Create Position
-          </button>
-        </div>
-
-        {/* RESULT */}
-        {position && (
-          <div className="mt-6">
-            <p className="text-gray-500 text-xs mb-1">Encrypted Position</p>
-            <p className="break-all text-xs bg-black/40 p-2 rounded">
-              {position}
+    <main className="min-h-screen bg-[#050505] text-[#00ffcc] font-mono p-4 lg:p-10 grid grid-cols-12 gap-6">
+      {/* LEFT PANEL: IKA MULTI-CHAIN GATEWAY */}
+      <div className="col-span-12 lg:col-span-3 border border-[#00ffcc]/20 bg-[#00ffcc]/5 p-6 rounded-xl backdrop-blur-md">
+        <h2 className="text-xs uppercase tracking-[0.2em] mb-6 text-yellow-400 font-bold">
+          Ika Gateway (MPC)
+        </h2>
+        <div className="space-y-4">
+          <div className="p-3 border border-[#00ffcc]/10 bg-black/40 rounded">
+            <p className="text-[10px] text-gray-500 uppercase">
+              Active dWallet
             </p>
+            <p className="text-[11px] break-all text-white font-bold">
+              {wallet || "Generating..."}
+            </p>
+          </div>
+          <div className="space-y-2">
+            <p className="text-[10px] text-gray-500 uppercase">
+              Cross-Chain Assets
+            </p>
+            {["Native BTC", "Ethereum (WETH)", "RWA Gold"].map((asset) => (
+              <div
+                key={asset}
+                className="flex justify-between text-xs p-2 bg-white/5 rounded border border-white/5"
+              >
+                <span>{asset}</span>
+                <span className="text-white">Locked</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-            {/* HEALTH */}
-            <div className="mt-5">
-              <p className="text-sm">
-                Health Factor:{" "}
-                <span className="font-bold">{health.toFixed(2)}</span>
-              </p>
+      {/* MIDDLE PANEL: CORE ENGINE */}
+      <div className="col-span-12 lg:col-span-6 flex flex-col gap-6">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-8 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-2 text-[8px] text-[#00ffcc]/30">
+            PROTOCOL_V.1.0.4
+          </div>
 
-              <div className="w-full h-2 bg-gray-800 rounded mt-2">
+          <h1 className="text-4xl font-black italic tracking-tighter mb-2 text-white">
+            SHADOW<span className="text-[#00ffcc]">FI</span>
+          </h1>
+          <p className="text-yellow-400 text-[10px] uppercase tracking-widest mb-8 border-b border-white/10 pb-4 font-bold">
+            Encrypted Capital Markets & Bridgeless Interoperability
+          </p>
+
+          <div className="flex flex-col gap-4">
+            <div className="group">
+              <label className="text-[10px] uppercase text-yellow-400 ml-1 font-bold">
+                Collateral Amount
+              </label>
+              <input
+                type="number"
+                placeholder="0.00"
+                className="w-full p-4 mt-1 rounded-xl bg-black/60 border border-white/10 focus:border-[#00ffcc] outline-none transition-all text-xl"
+                onChange={(e) => setCollateral(Number(e.target.value))}
+              />
+            </div>
+
+            <div className="group">
+              <label className="text-[10px] uppercase text-yellow-400 ml-1 font-bold">
+                Borrowing (USDC)
+              </label>
+              <input
+                type="number"
+                placeholder="0.00"
+                className="w-full p-4 mt-1 rounded-xl bg-black/60 border border-white/10 focus:border-[#00ffcc] outline-none transition-all text-xl"
+                onChange={(e) => setDebt(Number(e.target.value))}
+              />
+            </div>
+
+            {/* LOGIKA TOMBOL KONEKSI WALLET */}
+            {!connected ? (
+              <button
+                onClick={connectWallet}
+                className="mt-4 bg-yellow-400 text-black py-4 rounded-xl font-black uppercase tracking-widest hover:scale-[0.98] transition-all shadow-[0_0_20px_rgba(250,204,21,0.4)]"
+              >
+                Connect Devnet Wallet
+              </button>
+            ) : (
+              <button
+                onClick={handleCreate}
+                className="mt-4 bg-[#00ffcc] text-black py-4 rounded-xl font-black uppercase tracking-widest hover:bg-[#00ffcc]/80 hover:scale-[0.98] transition-all shadow-[0_0_20px_rgba(0,255,204,0.3)]"
+              >
+                Initialize Encrypted Position
+              </button>
+            )}
+          </div>
+
+          {position && (
+            <div className="mt-10 pt-6 border-t border-white/10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="flex justify-between items-end mb-2">
+                <div>
+                  <p className="text-[10px] text-gray-500 uppercase">
+                    Position Shield Status
+                  </p>
+                  <p
+                    className={`text-lg font-bold ${status === "SAFE" ? "text-green-400" : "text-red-500"}`}
+                  >
+                    {status}
+                  </p>
+                </div>
+                <p className="text-xs text-white font-bold">
+                  Health: {health.toFixed(2)}
+                </p>
+              </div>
+
+              <div className="w-full h-3 bg-gray-900 rounded-full overflow-hidden border border-white/5">
                 <div
-                  className={`h-2 rounded transition-all duration-500 ${
+                  className={`h-full rounded-full transition-all duration-1000 ${
                     status === "SAFE"
-                      ? "bg-green-500 shadow-[0_0_10px_#22c55e]"
-                      : status === "RISKY"
-                        ? "bg-yellow-400 shadow-[0_0_10px_#facc15]"
-                        : "bg-red-500 shadow-[0_0_10px_#ef4444]"
+                      ? "bg-green-500 shadow-[0_0_15px_#22c55e]"
+                      : "bg-red-500"
                   }`}
                   style={{ width: `${healthPercent}%` }}
                 />
               </div>
+
+              {/* SIMULASI ON-CHAIN TX HASH */}
+              <p className="mt-4 text-[9px] text-yellow-400/70 italic tracking-tight">
+                ⛓️ On-chain TX: <span className="text-white">{txHash}</span>{" "}
+                (Verified by Ika & Encrypt Nodes)
+              </p>
+
+              {liquidated && (
+                <div className="mt-6 p-4 bg-red-500/10 border border-red-500/50 rounded-lg animate-pulse">
+                  <p className="text-red-500 font-bold text-[10px] text-center uppercase tracking-tighter">
+                    ☣️ Position Auto-Liquidated by Encrypted Strategy Vault ☣️
+                  </p>
+                </div>
+              )}
             </div>
+          )}
+        </div>
+      </div>
 
-            {/* STATUS */}
-            <p className="mt-3 text-sm">
-              Status:{" "}
-              <span
-                className={`font-bold ${
-                  status === "SAFE"
-                    ? "text-green-400"
-                    : status === "RISKY"
-                      ? "text-yellow-400"
-                      : "text-red-500"
-                }`}
-              >
-                {status}
-              </span>
+      {/* RIGHT PANEL: ENCRYPT PRIVACY LOGS */}
+      <div className="col-span-12 lg:col-span-3 border border-[#00ffcc]/20 bg-black/60 p-6 rounded-xl">
+        <h2 className="text-xs uppercase tracking-[0.2em] mb-6 text-yellow-400 font-bold italic">
+          Encrypt Shield (FHE)
+        </h2>
+        <div className="space-y-4">
+          <div className="p-3 bg-[#00ffcc]/5 border-l-2 border-[#00ffcc] rounded-r">
+            <p className="text-[10px] text-gray-400 uppercase">
+              Encryption Protocol
             </p>
-
-            {/* LIQUIDATION */}
-            {liquidated && (
-              <div className="mt-4 p-3 bg-red-900/40 border border-red-500/30 rounded-lg">
-                <p className="text-red-400 font-bold text-sm">
-                  ⚠️ Auto Liquidated by Shadow Engine
-                </p>
-              </div>
-            )}
+            <p className="text-xs font-bold text-white uppercase tracking-widest">
+              REFHE Pre-Alpha
+            </p>
           </div>
-        )}
+
+          <div className="mt-10">
+            <p className="text-[10px] text-gray-500 uppercase mb-3 font-bold">
+              Protocol Logs
+            </p>
+            <div className="space-y-2">
+              {logs.map((log, i) => (
+                <p
+                  key={i}
+                  className="text-[9px] font-mono leading-tight text-[#00ffcc]/70 border-b border-white/5 pb-1"
+                >
+                  {log}
+                </p>
+              ))}
+            </div>
+          </div>
+
+          {position && (
+            <div className="mt-6">
+              <p className="text-[10px] text-gray-500 uppercase mb-2">
+                FHE Ciphertext Position
+              </p>
+              <div className="p-2 bg-black text-[8px] break-all border border-[#00ffcc]/30 rounded text-[#00ffcc]/50 h-20 overflow-y-auto">
+                {position}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </main>
   );
